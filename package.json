@@ -1,0 +1,21 @@
+{
+  "name": "muskle-originals-ai-food-analysis",
+  "version": "1.0.0",
+  "description": "AI Food Analysis web app with OpenAI integration",
+  "main": "index.js",
+  "scripts": {
+    "dev": "vercel dev",
+    "build": "echo 'No build step required'",
+    "start": "vercel dev"
+  },
+  "keywords": [
+    "ai",
+    "food-analysis",
+    "nutrition"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {},
+  "devDependencies": {}
+}
+

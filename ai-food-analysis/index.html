@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="AI Food Analysis - Upload a photo of your meal to get estimated calories and macros.">
+    <title>AI Food Analysis - Muskle Originals</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="css/ai-food-analysis.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="nav">
+        <div class="container">
+            <a href="/" class="site-logo">
+                <img src="../images/logo/muskle-originals-logo-white.jpeg"
+                     alt="Muskle Originals"
+                     width="160"
+                     height="auto">
+            </a>
+            <button class="menu-toggle" aria-label="Open menu">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+            <ul class="nav-menu">
+                <li><a href="/">Home</a></li>
+                <li><a href="/about/">About</a></li>
+                <li><a href="/learn/">Learn</a></li>
+                <li class="has-submenu">
+                    <a href="/tools/">Tools</a>
+                    <ul class="submenu">
+                        <li><a href="/ai-food-analysis/">AI Food Analysis</a></li>
+                    </ul>
+                </li>
+                <li><a href="/instructors/">Instructors</a></li>
+                <li><a href="/nearby/">Nearby</a></li>
+                <li><a href="https://shop.muskleoriginals.com" target="_blank" rel="noopener noreferrer">Shop</a></li>
+                <li><a href="/contact/">Contact</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Mobile Menu Overlay -->
+    <nav class="mobile-menu" id="mobileMenu">
+        <button class="menu-close" aria-label="Close menu">✕</button>
+        <ul>
+            <li><a href="/">Home</a></li>
+            <li><a href="/about/">About</a></li>
+            <li><a href="/learn/">Learn</a></li>
+            <li class="has-submenu">
+                <a href="/tools/">Tools</a>
+                <button class="submenu-toggle" aria-label="Toggle Tools submenu" aria-expanded="false">+</button>
+                <ul class="submenu">
+                    <li><a href="/ai-food-analysis/">AI Food Analysis</a></li>
+                </ul>
+            </li>
+            <li><a href="/instructors/">Instructors</a></li>
+            <li><a href="/nearby/">Nearby</a></li>
+            <li><a href="https://shop.muskleoriginals.com" target="_blank" rel="noopener noreferrer">Shop</a></li>
+            <li><a href="/contact/">Contact</a></li>
+        </ul>
+    </nav>
+
+    <!-- Intro Flow Container -->
+    <div id="intro-flow" class="intro-flow">
+        <!-- Screen 1: Welcome -->
+        <div class="intro-screen active" data-screen="1">
+            <div class="intro-content">
+                <div class="intro-mascot">
+                    <img src="images/ai-food-analysis.png" alt="AI Food Analysis mascot">
+                </div>
+                <h1 class="intro-title">AI Food Calculator</h1>
+                <p class="intro-subtitle">Analyze your meals.<br>Understand your nutrition.<br>No stress. No perfection.</p>
+                <button class="btn btn-primary intro-button" data-action="next">Get Started</button>
+                <p class="intro-footer">Powered by Bear Strength</p>
+            </div>
+        </div>
+
+        <!-- Screen 2: How It Works -->
+        <div class="intro-screen" data-screen="2">
+            <div class="intro-content">
+                <h2 class="intro-headline">How it works</h2>
+                <div class="intro-steps">
+                    <div class="intro-step">
+                        <img src="images/Take a photo of your meal (1).png" alt="" class="step-icon" width="60" height="auto">
+                        <p class="step-text">Take a photo of your meal</p>
+                    </div>
+                    <div class="intro-step">
+                        <img src="images/AI estimates calories & macros(2).png" alt="" class="step-icon" width="60" height="auto">
+                        <p class="step-text">AI estimates calories & macros</p>
+                    </div>
+                    <div class="intro-step">
+                        <img src="images/See your daily intake (3).png" alt="" class="step-icon" width="60" height="auto">
+                        <p class="step-text">See calories, protein, carbs & fat</p>
+                    </div>
+                </div>
+                <p class="intro-helper">Estimates only. Built to guide — not judge.</p>
+                <button class="btn btn-primary intro-button" data-action="next">Continue</button>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Page Content (Hidden initially) -->
+    <main class="page-content" id="main-content" style="display: none;">
+        <div class="container">
+            <h1>AI Food Analysis</h1>
+            <p class="page-subtitle">Upload a photo of your meal to get estimated calories and macros.</p>
+
+            <div class="food-analysis-container">
+                <!-- Upload Section -->
+                <div class="upload-section">
+                    <div class="upload-mascot">
+                        <img src="images/Take a photo of your meal (1).png" alt="Take a photo of your meal" />
+                    </div>
+                    <label for="food-image-input" class="upload-label">
+                        <input type="file" 
+                               id="food-image-input" 
+                               accept="image/*" 
+                               capture="environment"
+                               aria-label="Upload food photo">
+                        <span class="upload-button">Choose Photo</span>
+                    </label>
+                    <p class="upload-hint">Take a photo or select from gallery</p>
+                </div>
+
+                <!-- Image Preview -->
+                <div id="image-preview-container" class="image-preview-container" style="display: none;">
+                    <img id="image-preview" src="" alt="Food photo preview">
+                    <p id="image-ready-text" class="image-ready-text">Image ready for analysis</p>
+                    <button id="remove-image" class="btn btn-secondary" style="margin-top: 1rem;">Remove Photo</button>
+                </div>
+
+                <!-- Analyze Button -->
+                <div class="analyze-section">
+                    <button id="analyze-button" class="btn btn-primary" disabled>Analyze Food</button>
+                </div>
+
+                <!-- Ingredient Confirmation Step -->
+                <div id="ingredient-step" class="ingredient-step" style="display: none;">
+                    <div class="ingredient-card">
+                        <h2 class="ingredient-title">Detected ingredients</h2>
+                        <p class="ingredient-helper">Check if something is missing or incorrect.</p>
+                        
+                        <ul id="ingredient-list" class="ingredient-list">
+                            <!-- Ingredients will be added dynamically -->
+                        </ul>
+                        
+                        <button id="add-ingredient-button" class="btn-add-ingredient">+ Add ingredient</button>
+                        
+                        <p class="ingredient-note">Photos may not show oils, sauces, or toppings clearly.</p>
+                        
+                        <div class="ingredient-actions">
+                            <button id="calculate-results-button" class="btn btn-primary">Calculate results</button>
+                            <button id="skip-calculate-button" class="btn btn-secondary">Skip and calculate</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Results Section -->
+                <div id="results-container" class="results-container" style="display: none;">
+                    <div class="results-card">
+                        <h2 class="results-card-title">AI Food Analysis</h2>
+                        <div class="results-grid">
+                            <div class="result-item">
+                                <div class="result-label">Calories</div>
+                                <div class="result-value" id="calories-value">-</div>
+                            </div>
+                            <div class="result-item">
+                                <div class="result-label">Protein</div>
+                                <div class="result-value" id="protein-value">-</div>
+                            </div>
+                            <div class="result-item">
+                                <div class="result-label">Carbs</div>
+                                <div class="result-value" id="carbs-value">-</div>
+                            </div>
+                            <div class="result-item">
+                                <div class="result-label">Fat</div>
+                                <div class="result-value" id="fat-value">-</div>
+                            </div>
+                        </div>
+                        <p class="results-disclaimer">Estimates only. Consistency beats perfection.</p>
+                        <p class="results-mascot">Powered by Bear Strength 🐻</p>
+                        <p class="results-brand">MUSKLE ORIGINALS</p>
+                    </div>
+                    <p class="share-tip">Tip: Screenshot this result and share it.</p>
+                    
+                    <!-- Share & Save Buttons -->
+                    <div class="share-save-buttons" id="share-save-buttons" style="display: none;">
+                        <button id="share-button" class="btn btn-secondary">Share Result</button>
+                        <button id="save-image-button" class="btn btn-secondary">Save Image</button>
+                    </div>
+                    
+                    <!-- Reset Button -->
+                    <div class="reset-section" id="reset-section" style="display: none;">
+                        <button id="reset-button" class="btn btn-secondary">Analyze another meal</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-brand">
+                    <img src="../images/logo/muskle-originals-logo-white.jpeg"
+                         alt="Muskle Originals"
+                         class="footer-logo">
+                    <p>Powered by Bear Strength</p>
+                    <p class="footer-trust">Trusted by fitness enthusiasts across Europe. Clear education, quality products, no confusion.</p>
+                </div>
+                <div class="footer-nav">
+                    <h4>Navigation</h4>
+                    <ul>
+                        <li><a href="/">Home</a></li>
+                        <li><a href="/about/">About</a></li>
+                        <li><a href="/learn/">Learn</a></li>
+                        <li class="has-submenu">
+                    <a href="/tools/">Tools</a>
+                    <ul class="submenu">
+                        <li><a href="/ai-food-analysis/">AI Food Analysis</a></li>
+                    </ul>
+                </li>
+                        <li><a href="/instructors/">Instructors</a></li>
+                        <li><a href="/nearby/">Nearby</a></li>
+                        <li><a href="https://shop.muskleoriginals.com" target="_blank" rel="noopener noreferrer">Shop</a></li>
+                        <li><a href="/contact/">Contact</a></li>
+                    </ul>
+                </div>
+                <div class="footer-legal">
+                    <h4>Legal</h4>
+                    <ul>
+                        <li><a href="/privacy-policy/">Privacy Policy</a></li>
+                        <li><a href="/terms-conditions/">Terms & Conditions</a></li>
+                    </ul>
+                </div>
+                <div class="footer-contact">
+                    <h4>Contact</h4>
+                    <p><a href="mailto:info@muskleoriginals.com">info@muskleoriginals.com</a></p>
+                </div>
+
+                <div class="footer-social">
+                    <h4>Social</h4>
+                    <ul>
+                        <li>
+                            <a href="https://www.instagram.com/muskle.originals/" target="_blank" rel="noopener noreferrer" aria-label="Muskle Originals on Instagram">
+                                <img src="/images/icons/instagram.svg" alt="" width="20" height="20" />
+                                <span>Instagram</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="https://www.tiktok.com/@muskleoriginals?lang=en" target="_blank" rel="noopener noreferrer" aria-label="Muskle Originals on TikTok">
+                                <img src="/images/icons/tiktok.svg" alt="" width="20" height="20" />
+                                <span>TikTok</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="https://www.youtube.com/@MUSKLE_Originals" target="_blank" rel="noopener noreferrer" aria-label="Muskle Originals on YouTube">
+                                <img src="/images/icons/youtube.svg" alt="" width="20" height="20" />
+                                <span>YouTube</span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2026 Muskle Originals. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Mobile Menu Toggle
+        const menuToggle = document.querySelector('.menu-toggle');
+        const mobileMenu = document.getElementById('mobileMenu');
+        const menuClose = document.querySelector('.menu-close');
+        const mobileMenuLinks = mobileMenu.querySelectorAll('a');
+
+        // Open menu
+        menuToggle.addEventListener('click', function() {
+            mobileMenu.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        });
+
+        // Close menu
+        menuClose.addEventListener('click', function() {
+            mobileMenu.classList.remove('active');
+            document.body.style.overflow = '';
+        });
+
+        // Close menu when clicking a link
+        mobileMenuLinks.forEach(link => {
+            link.addEventListener('click', function() {
+                mobileMenu.classList.remove('active');
+                document.body.style.overflow = '';
+            });
+        });
+
+        // Mobile submenu toggle
+        const submenuToggle = document.querySelector('.submenu-toggle');
+        if (submenuToggle) {
+            submenuToggle.addEventListener('click', (e) => {
+                e.preventDefault();
+                const parent = submenuToggle.parentElement;
+                const submenu = parent.querySelector('.submenu');
+                const isExpanded = submenuToggle.getAttribute('aria-expanded') === 'true';
+                
+                submenuToggle.setAttribute('aria-expanded', !isExpanded);
+                submenuToggle.textContent = isExpanded ? '+' : '−';
+                
+                if (submenu) {
+                    submenu.classList.toggle('active');
+                }
+            });
+        }
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="js/ai-food-analysis.js"></script>
+</body>
+</html>
+

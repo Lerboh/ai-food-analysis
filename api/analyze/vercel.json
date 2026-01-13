@@ -1,0 +1,8 @@
+{
+  "functions": {
+    "api/analyze/index.js": {
+      "maxDuration": 30
+    }
+  }
+}
+
