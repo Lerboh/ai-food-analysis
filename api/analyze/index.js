@@ -2,53 +2,68 @@
 // Serverless function for analyzing food images with OpenAI
 
 export default async function handler(req, res) {
-    // Only allow POST requests
-    if (req.method !== 'POST') {
-        return res.status(405).json({ error: 'Method not allowed' });
-    }
+    // Log incoming request
+    console.log('[API] Incoming request:', {
+        method: req.method,
+        hasBody: !!req.body,
+        timestamp: new Date().toISOString()
+    });
 
-    // Rate limiting: 3 analyses per IP per day
-    const clientIP = req.headers['x-forwarded-for'] || req.headers['x-real-ip'] || req.ip || 'unknown';
-    const rateLimitKey = `rate_limit_${clientIP}`;
-    const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
-    
-    // Simple in-memory rate limiting (for production, use Redis or similar)
-    // This is a basic implementation - in production, use a proper rate limiting service
-    if (!global.rateLimitStore) {
-        global.rateLimitStore = {};
-    }
-    
-    const userLimit = global.rateLimitStore[rateLimitKey];
-    if (userLimit && userLimit.date === today && userLimit.count >= 3) {
-        return res.status(429).json({
-            error: "Sorry — you've reached today's limit (3). Come back tomorrow."
-        });
-    }
-
-    // Initialize or update rate limit
-    if (!userLimit || userLimit.date !== today) {
-        global.rateLimitStore[rateLimitKey] = { date: today, count: 0 };
-    }
-    global.rateLimitStore[rateLimitKey].count++;
-
+    // Wrap entire handler in try/catch to ensure JSON response
     try {
-        // Get OpenAI API key from environment variable
+        // Only allow POST requests
+        if (req.method !== 'POST') {
+            console.log('[API] Method not allowed:', req.method);
+            return res.status(405).json({ error: 'Method not allowed' });
+        }
+
+        // Check environment variable FIRST - before any other processing
         const openaiApiKey = process.env.OPENAI_API_KEY;
         if (!openaiApiKey) {
-            console.error('OPENAI_API_KEY environment variable not set');
+            console.error('[API] ERROR: OPENAI_API_KEY environment variable not set');
             return res.status(500).json({
-                error: 'Unable to analyze image. Please try a clearer photo.'
+                error: 'Missing OPENAI_API_KEY'
             });
         }
+
+        // Rate limiting: 3 analyses per IP per day
+        const clientIP = req.headers['x-forwarded-for'] || req.headers['x-real-ip'] || req.ip || 'unknown';
+        const rateLimitKey = `rate_limit_${clientIP}`;
+        const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+        
+        console.log('[API] Rate limit check for IP:', clientIP);
+        
+        // Simple in-memory rate limiting (for production, use Redis or similar)
+        // This is a basic implementation - in production, use a proper rate limiting service
+        if (!global.rateLimitStore) {
+            global.rateLimitStore = {};
+        }
+        
+        const userLimit = global.rateLimitStore[rateLimitKey];
+        if (userLimit && userLimit.date === today && userLimit.count >= 3) {
+            console.log('[API] Rate limit exceeded for IP:', clientIP);
+            return res.status(429).json({
+                error: "Sorry — you've reached today's limit (3). Come back tomorrow."
+            });
+        }
+
+        // Initialize or update rate limit
+        if (!userLimit || userLimit.date !== today) {
+            global.rateLimitStore[rateLimitKey] = { date: today, count: 0 };
+        }
+        global.rateLimitStore[rateLimitKey].count++;
 
         // Get image from request body (expecting base64 encoded image)
         let imageBase64 = req.body?.image;
 
         if (!imageBase64) {
+            console.log('[API] ERROR: No image in request body');
             return res.status(400).json({
                 error: 'Image is required. Please upload a photo.'
             });
         }
+
+        console.log('[API] Image received, length:', imageBase64.length);
 
         // Convert base64 to proper format if needed
         const imageData = imageBase64.startsWith('data:') 
@@ -56,6 +71,7 @@ export default async function handler(req, res) {
             : imageBase64;
 
         // Call OpenAI Vision API
+        console.log('[API] Calling OpenAI API...');
         const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
             method: 'POST',
             headers: {
@@ -101,22 +117,43 @@ Do not include any text outside the JSON.`
             })
         });
 
+        console.log('[API] OpenAI response status:', openaiResponse.status, openaiResponse.statusText);
+
         if (!openaiResponse.ok) {
-            const errorData = await openaiResponse.text();
-            console.error('OpenAI API error:', errorData);
+            const errorText = await openaiResponse.text();
+            console.error('[API] OpenAI API error:', {
+                status: openaiResponse.status,
+                statusText: openaiResponse.statusText,
+                body: errorText
+            });
             return res.status(500).json({
                 error: 'Unable to analyze image. Please try a clearer photo.'
             });
         }
 
-        const openaiData = await openaiResponse.json();
-        const aiMessage = openaiData.choices[0]?.message?.content;
+        // Safely parse OpenAI response
+        let openaiData;
+        try {
+            const responseText = await openaiResponse.text();
+            console.log('[API] OpenAI response text length:', responseText.length);
+            openaiData = JSON.parse(responseText);
+        } catch (parseError) {
+            console.error('[API] ERROR: Failed to parse OpenAI response:', parseError);
+            return res.status(500).json({
+                error: 'Unable to analyze image. Please try a clearer photo.'
+            });
+        }
+
+        const aiMessage = openaiData.choices?.[0]?.message?.content;
 
         if (!aiMessage) {
+            console.error('[API] ERROR: No message content in OpenAI response:', JSON.stringify(openaiData));
             return res.status(500).json({
                 error: 'Unable to analyze image. Please try a clearer photo.'
             });
         }
+
+        console.log('[API] OpenAI message received, length:', aiMessage.length);
 
         // Parse JSON from AI response
         // The AI might return JSON wrapped in markdown code blocks
@@ -128,8 +165,15 @@ Do not include any text outside the JSON.`
         let analysisResult;
         try {
             analysisResult = JSON.parse(jsonText);
+            console.log('[API] Successfully parsed AI response:', {
+                ingredientsCount: analysisResult.ingredients?.length || 0,
+                hasMacros: !!analysisResult.macros
+            });
         } catch (parseError) {
-            console.error('Failed to parse AI response:', jsonText);
+            console.error('[API] ERROR: Failed to parse AI response JSON:', {
+                error: parseError.message,
+                jsonText: jsonText.substring(0, 200) // Log first 200 chars
+            });
             return res.status(500).json({
                 error: 'Unable to analyze image. Please try a clearer photo.'
             });
@@ -137,6 +181,7 @@ Do not include any text outside the JSON.`
 
         // Validate response structure
         if (!analysisResult.ingredients || !Array.isArray(analysisResult.ingredients)) {
+            console.error('[API] ERROR: Invalid ingredients in response:', analysisResult);
             return res.status(500).json({
                 error: 'Unable to analyze image. Please try a clearer photo.'
             });
@@ -147,13 +192,14 @@ Do not include any text outside the JSON.`
             typeof analysisResult.macros.protein !== 'number' ||
             typeof analysisResult.macros.carbs !== 'number' ||
             typeof analysisResult.macros.fat !== 'number') {
+            console.error('[API] ERROR: Invalid macros in response:', analysisResult.macros);
             return res.status(500).json({
                 error: 'Unable to analyze image. Please try a clearer photo.'
             });
         }
 
-        // Return successful response
-        return res.status(200).json({
+        // Prepare successful response
+        const finalResponse = {
             ingredients: analysisResult.ingredients,
             macros: {
                 calories: Math.round(analysisResult.macros.calories),
@@ -161,10 +207,25 @@ Do not include any text outside the JSON.`
                 carbs: Math.round(analysisResult.macros.carbs),
                 fat: Math.round(analysisResult.macros.fat)
             }
+        };
+
+        console.log('[API] Success! Returning response:', {
+            ingredientsCount: finalResponse.ingredients.length,
+            calories: finalResponse.macros.calories
         });
 
+        // Return successful response - ALWAYS JSON
+        return res.status(200).json(finalResponse);
+
     } catch (error) {
-        console.error('Error analyzing image:', error);
+        // Catch-all error handler - ensures JSON is ALWAYS returned
+        console.error('[API] ERROR: Unhandled exception:', {
+            message: error.message,
+            stack: error.stack,
+            name: error.name
+        });
+        
+        // ALWAYS return JSON, even on unexpected errors
         return res.status(500).json({
             error: 'Unable to analyze image. Please try a clearer photo.'
         });

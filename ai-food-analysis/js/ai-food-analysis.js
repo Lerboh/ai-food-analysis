@@ -380,6 +380,7 @@
                     });
 
                     // Call API
+                    console.log('[Frontend] Calling API...');
                     const response = await fetch('/api/analyze', {
                         method: 'POST',
                         headers: {
@@ -390,28 +391,56 @@
                         })
                     });
 
-                    const data = await response.json();
+                    console.log('[Frontend] API response status:', response.status, response.statusText);
+
+                    // Safe JSON parsing - prevent "Unexpected end of JSON input" crash
+                    const responseText = await response.text();
+                    console.log('[Frontend] API response text length:', responseText.length);
+                    
+                    let data;
+                    try {
+                        if (!responseText || responseText.trim() === '') {
+                            throw new Error('Empty response from server');
+                        }
+                        data = JSON.parse(responseText);
+                        console.log('[Frontend] Successfully parsed JSON response');
+                    } catch (parseError) {
+                        console.error('[Frontend] ERROR: Failed to parse JSON:', {
+                            error: parseError.message,
+                            responseText: responseText.substring(0, 200) // Log first 200 chars
+                        });
+                        throw new Error('Invalid API response: ' + (responseText.substring(0, 100) || 'Empty response'));
+                    }
 
                     // Handle errors
                     if (!response.ok) {
-                        throw new Error(data.error || 'Unable to analyze image. Please try again.');
+                        const errorMessage = data?.error || `Server error (${response.status}). Please try again.`;
+                        console.error('[Frontend] API error response:', errorMessage);
+                        throw new Error(errorMessage);
                     }
 
                     // Check for rate limit
                     if (response.status === 429) {
-                        throw new Error(data.error || "Sorry — you've reached today's limit (3). Come back tomorrow.");
+                        const errorMessage = data?.error || "Sorry — you've reached today's limit (3). Come back tomorrow.";
+                        console.log('[Frontend] Rate limit reached');
+                        throw new Error(errorMessage);
                     }
 
                     // Success - set ingredients and macros from AI response
+                    console.log('[Frontend] Processing successful response...');
                     if (data.ingredients && Array.isArray(data.ingredients)) {
                         currentIngredients = [...data.ingredients];
+                        console.log('[Frontend] Ingredients received:', currentIngredients.length);
                     } else {
+                        console.error('[Frontend] ERROR: Invalid ingredients in response:', data);
                         throw new Error('Invalid response from server.');
                     }
 
                     if (data.macros) {
                         aiMacros = data.macros;
+                        console.log('[Frontend] Macros received:', aiMacros);
                     } else {
+                        console.error('[Frontend] ERROR: No macros in response:', data);
                         throw new Error('Nutrition data not available.');
                     }
 
@@ -429,11 +458,21 @@
                     }
 
                 } catch (error) {
-                    // Show error message
+                    // Log error for debugging
+                    console.error('[Frontend] ERROR in analysis:', {
+                        message: error.message,
+                        name: error.name,
+                        stack: error.stack
+                    });
+
+                    // Show user-friendly error message
                     const errorDiv = document.createElement('div');
                     errorDiv.id = 'analysis-error';
                     errorDiv.style.cssText = 'text-align: center; color: #ff6b6b; margin-top: 1rem; padding: 1rem; background-color: rgba(255, 107, 107, 0.1); border-radius: 4px;';
-                    errorDiv.textContent = error.message || 'Unable to analyze image. Please try again.';
+                    
+                    // Display user-friendly error message
+                    const userMessage = error.message || 'Unable to analyze image. Please try again.';
+                    errorDiv.textContent = userMessage;
                     
                     // Insert error message after analyze button
                     if (analyzeButton.parentElement) {
